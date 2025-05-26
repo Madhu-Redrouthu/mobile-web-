@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmptyCup Listings</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Roboto Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .listing-card {
+      transition: all 0.3s ease;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- Header -->
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-gray-800">EmptyCup Listings</h1>
+    <button id="shortlist-filter" class="text-gray-600 hover:text-gray-800">
+      <i class="fas fa-filter"></i> Shortlisted
+    </button>
+  </header>
+
+  <!-- Listings Container -->
+  <main id="listings-container" class="p-4 space-y-4">
+    <!-- Listings will be dynamically inserted here -->
+  </main>
+
+  <!-- JavaScript -->
+  <script>
+    // Sample listings data (will be replaced by API fetch)
+    const listingsData = [
+      {
+        id: 1,
+        title: "Modern Sofa",
+        description: "Comfortable and stylish sofa for modern interiors.",
+        image: "https://via.placeholder.com/150"
+      },
+      {
+        id: 2,
+        title: "Wooden Coffee Table",
+        description: "Minimalist coffee table with a natural finish.",
+        image: "https://via.placeholder.com/150"
+      },
+      {
+        id: 3,
+        title: "Vintage Armchair",
+        description: "Classic armchair with velvet upholstery.",
+        image: "https://via.placeholder.com/150"
+      }
+    ];
+
+    // State to track shortlisted items
+    let shortlistedItems = new Set();
+    let isShortlistFilterActive = false;
+
+    // DOM Elements
+    const listingsContainer = document.getElementById('listings-container');
+    const shortlistFilterBtn = document.getElementById('shortlist-filter');
+
+    // Function to render listings
+    function renderListings(listings) {
+      listingsContainer.innerHTML = '';
+      listings.forEach(listing => {
+        const isShortlisted = shortlistedItems.has(listing.id);
+        const card = document.createElement('div');
+        card.className = 'listing-card bg-white rounded-lg shadow p-4 flex items-center space-x-4';
+        card.dataset.id = listing.id;
+        card.innerHTML = `
+          <img src="${listing.image}" alt="${listing.title}" class="w-16 h-16 object-cover rounded">
+          <div class="flex-1">
+            <h2 class="text-lg font-semibold text-gray-800">${listing.title}</h2>
+            <p class="text-sm text-gray-600">${listing.description}</p>
+          </div>
+          <div class="flex space-x-2">
+            <button class="text-gray-500 hover:text-gray-700" title="Details"><i class="fas fa-info-circle"></i></button>
+            <button class="text-gray-500 hover:text-gray-700" title="Hide"><i class="fas fa-eye-slash"></i></button>
+            <button class="shortlist-btn text-gray-500 hover:text-gray-700" title="Shortlist">
+              <i class="${isShortlisted ? 'fas' : 'far'} fa-star"></i>
+            </button>
+            <button class="text-gray-500 hover:text-gray-700" title="Report"><i class="fas fa-flag"></i></button>
+          </div>
+        `;
+        listingsContainer.appendChild(card);
+      });
+    }
+
+    // Toggle shortlist for a listing
+    function toggleShortlist(listingId, button) {
+      if (shortlistedItems.has(listingId)) {
+        shortlistedItems.delete(listingId);
+        button.querySelector('i').classList.replace('fas', 'far');
+      } else {
+        shortlistedItems.add(listingId);
+        button.querySelector('i').classList.replace('far', 'fas');
+      }
+      updateListings();
+    }
+
+    // Toggle shortlist filter
+    function toggleShortlistFilter() {
+      isShortlistFilterActive = !isShortlistFilterActive;
+      shortlistFilterBtn.querySelector('i').classList.toggle('fas', isShortlistFilterActive);
+      shortlistFilterBtn.querySelector('i').classList.toggle('far', !isShortlistFilterActive);
+      updateListings();
+    }
+
+    // Update listings based on filter
+    function updateListings() {
+      if (isShortlistFilterActive) {
+        const filteredListings = listingsData.filter(listing => shortlistedItems.has(listing.id));
+        renderListings(filteredListings);
+      } else {
+        renderListings(listingsData);
+      }
+    }
+
+    // Fetch listings from API
+    async function fetchListings() {
+      try {
+        const response = await fetch('http://localhost:5000/api/listings');
+        const data = await response.json();
+        listingsData.length = 0; // Clear existing data
+        listingsData.push(...data);
+        updateListings();
+      } catch (error) {
+        console.error('Error fetching listings:', error);
+        // Fallback to sample data
+        updateListings();
+      }
+    }
+
+    // Event listeners
+    listingsContainer.addEventListener('click', (e) => {
+      if (e.target.closest('.shortlist-btn')) {
+        const button = e.target.closest('.shortlist-btn');
+        const listingId = parseInt(button.closest('.listing-card').dataset.id);
+        toggleShortlist(listingId, button);
+      }
+    });
+
+    shortlistFilterBtn.addEventListener('click', toggleShortlistFilter);
+
+    // Initial render
+    fetchListings();
+  </script>
+</body>
+</html>
